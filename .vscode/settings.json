@@ -1,0 +1,19 @@
+{
+    "cmake.useCMakePresets": "always",
+    "cmake.configurePreset": "Debug",
+    "cmake.buildPreset": "Debug",
+    "cmake.buildBeforeRun": true,
+    "files.associations": {
+        "main.h": "c",
+        "stm32f1xx_hal.h": "c",
+        "stm32f1xx_hal_conf.h": "c",
+        "fsmc.h": "c",
+        "sd_diskio.h": "c",
+        // "lv_port_disp.h": "c",
+        // "lv_extra.h": "c",
+        "ili9341.h": "c",
+        "dma.h": "c",
+        "sdio.h": "c",
+        "fonts.h": "c"
+    }
+}
