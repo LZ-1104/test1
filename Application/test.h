@@ -4,7 +4,7 @@
 
 #include "stm32f1xx_hal.h"
 
-// void test_function(void);
+void lv_test(void);
 void LCD_Test(void);
 void ILI9341_Test(void);
 void FLASH_Test(void);

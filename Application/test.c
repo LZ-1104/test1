@@ -4,6 +4,10 @@
 #include <stdio.h>
 // #include "image.h"
 #include "bsp_spi_flash.h"
+#include "lv_port_indev.h"
+#include "lv_port_disp.h"
+#include "lvgl.h"
+
 
 
 void FLASH_Test(void)
@@ -38,13 +42,6 @@ void ILI9341_Test(void)
     ILI9341_ShowFloatNum(10, 130, -123.456, 3, 3, Font16x24);
 }
 
-
-
-
-
-
-
-
 //初始化PA4引脚，用于翻转电平，记录DMA传输完成状态
 void ILI9341_Init_Status_Pin(void)
 {
@@ -60,7 +57,6 @@ void ILI9341_Init_Status_Pin(void)
 
     HAL_GPIO_WritePin(GPIOA, GPIO_PIN_4, GPIO_PIN_RESET); //初始状态为低
 }
-
 
 void LCD_Test(void)
 {
@@ -133,18 +129,73 @@ void LCD_Test(void)
     }
 }
 
-// void test_function(void)
-// {
 
-//     lv_init();
-//     lv_port_disp_init();
+static lv_obj_t *g_touch_status = NULL;
 
-//     // 使用lvgl显示一些内容
-//     lv_obj_t *label = lv_label_create(lv_scr_act());
-//     lv_label_set_text(label, "Hello");
-//     lv_obj_align(label, LV_ALIGN_CENTER, 0, 0);
-//     // 显示
-// }
+static void touch_btn_event_cb(lv_event_t *e)
+{
+    lv_event_code_t code = lv_event_get_code(e);
+    lv_obj_t *btn = lv_event_get_target(e);
+
+    if(code == LV_EVENT_PRESSED) {
+        lv_obj_set_style_bg_color(btn, lv_color_hex(0x44AA44), 0);
+        if(g_touch_status) lv_label_set_text(g_touch_status, "Status: PRESSED");
+    }
+    else if(code == LV_EVENT_RELEASED) {
+        lv_obj_set_style_bg_color(btn, lv_color_hex(0x2E6BD1), 0);
+        if(g_touch_status) lv_label_set_text(g_touch_status, "Status: RELEASED");
+    }
+    else if(code == LV_EVENT_CLICKED) {
+        if(g_touch_status) lv_label_set_text(g_touch_status, "Status: CLICKED");
+    }
+}
+
+/*
+测试LVGL控制触摸屏
+*/
+void lv_test(void)
+{
+    lv_init();
+    lv_port_disp_init();
+    lv_port_indev_init();
+
+    lv_obj_set_style_bg_color(lv_screen_active(), lv_color_hex(0xFFFFFF), 0);
+    lv_obj_set_style_bg_opa(lv_screen_active(), LV_OPA_COVER, 0);
+
+    // 创建一个标签对象
+    lv_obj_t * label = lv_label_create(lv_scr_act());
+    lv_label_set_text(label, "Hello, LVGL!");
+    lv_obj_set_style_text_color(label, lv_color_hex(0x000000), 0);
+    lv_obj_align(label, LV_ALIGN_CENTER, 0, 0);
+
+    //LVGL触摸测试
+    lv_obj_t * touch_label = lv_label_create(lv_scr_act());
+    lv_label_set_text(touch_label, "Touch me!");
+    lv_obj_set_style_text_color(touch_label, lv_color_hex(0x000000), 0);
+    lv_obj_align(touch_label, LV_ALIGN_CENTER, 0, 40);
+
+    lv_obj_t *btn = lv_button_create(lv_scr_act());
+    lv_obj_set_size(btn, 140, 50);
+    lv_obj_set_style_bg_color(btn, lv_color_hex(0x2E6BD1), 0);
+    lv_obj_align(btn, LV_ALIGN_CENTER, 0, 95);
+    lv_obj_add_event_cb(btn, touch_btn_event_cb, LV_EVENT_ALL, NULL);
+
+    lv_obj_t *btn_label = lv_label_create(btn);
+    lv_label_set_text(btn_label, "Tap Here");
+    lv_obj_center(btn_label);
+
+    g_touch_status = lv_label_create(lv_scr_act());
+    lv_label_set_text(g_touch_status, "Status: WAIT");
+    lv_obj_set_style_text_color(g_touch_status, lv_color_hex(0x000000), 0);
+    lv_obj_align(g_touch_status, LV_ALIGN_BOTTOM_MID, 0, -10);
+
+
+    while (1)
+    {
+        lv_timer_handler(); // 处理LVGL任务
+        HAL_Delay(5); // 延时，避免占用过多CPU资源
+    }
+}
 
 void PCM_Test(void)
 {

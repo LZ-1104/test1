@@ -57,6 +57,7 @@ target_sources(${CMAKE_PROJECT_NAME} PRIVATE
     ${CMAKE_SOURCE_DIR}/bsp/bsp_spi_flash.c
     ${CMAKE_SOURCE_DIR}/bsp/bsp_debug_usart.c
      ${CMAKE_SOURCE_DIR}/bsp/lv_port_disp.c
+        ${CMAKE_SOURCE_DIR}/bsp/lv_port_indev.c
     ${CMAKE_SOURCE_DIR}/Application/test.c
      ${CMAKE_SOURCE_DIR}/bsp/image.c
     ${CMAKE_SOURCE_DIR}/bsp/BH1750.c

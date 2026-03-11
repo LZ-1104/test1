@@ -34,6 +34,7 @@
 #include "log.h"
 #include "ILI9341.h"
 #include "timer.h"
+#include "test.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -110,14 +111,14 @@ int main(void)
   MX_I2C1_Init();
   /* USER CODE BEGIN 2 */
 
-  ILI9341_Init();
+
   log_Init();
   if(Timer_Init() != STATUS_OK)
   {
       log_Error("Failed to initialize timer.");
       Error_Handler();
   }
-
+  lv_test();
   /* USER CODE END 2 */
 
   /* Init scheduler */
