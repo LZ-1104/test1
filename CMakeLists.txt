@@ -41,7 +41,7 @@ target_link_options(test1 PRIVATE -u _printf_float)
 # Add STM32CubeMX generated sources
 add_subdirectory(cmake/stm32cubemx)#添加STM32CubeMX生成的代码
 # Add LVGL library
-# add_subdirectory(LVGL/lvgl)
+add_subdirectory(LVGL/lvgl)
 # Link directories setup
 target_link_directories(${CMAKE_PROJECT_NAME} PRIVATE
     # Add user defined library search paths
@@ -56,13 +56,15 @@ target_sources(${CMAKE_PROJECT_NAME} PRIVATE
     ${CMAKE_SOURCE_DIR}/bsp/XPT2046.c
     ${CMAKE_SOURCE_DIR}/bsp/bsp_spi_flash.c
     ${CMAKE_SOURCE_DIR}/bsp/bsp_debug_usart.c
-    # ${CMAKE_SOURCE_DIR}/bsp/lv_port_disp.c
+     ${CMAKE_SOURCE_DIR}/bsp/lv_port_disp.c
     ${CMAKE_SOURCE_DIR}/Application/test.c
-    # ${CMAKE_SOURCE_DIR}/bsp/image.c
+     ${CMAKE_SOURCE_DIR}/bsp/image.c
     ${CMAKE_SOURCE_DIR}/bsp/BH1750.c
     ${CMAKE_SOURCE_DIR}/bsp/MAX30102.c
     ${CMAKE_SOURCE_DIR}/system/IIC.c
     ${CMAKE_SOURCE_DIR}/bsp/DHT11.c
+    ${CMAKE_SOURCE_DIR}/Middlewares/Log/log.c
+    ${CMAKE_SOURCE_DIR}/Application/timer.c
 )
 
 # Add include paths
@@ -71,7 +73,9 @@ target_include_directories(${CMAKE_PROJECT_NAME} PRIVATE
     bsp
     system
     Application
-    # "LVGL/lvgl"
+    Middlewares/Log
+    Middlewares/Status
+    "LVGL/lvgl"
 )
 
 # Add project symbols (macros)
@@ -82,7 +86,7 @@ target_compile_definitions(${CMAKE_PROJECT_NAME} PRIVATE
 # Add linked libraries
 target_link_libraries(${CMAKE_PROJECT_NAME}
     stm32cubemx
-    # lvgl
+    lvgl
     # Add user defined libraries
 )
 

@@ -22,7 +22,6 @@
 #include "dma.h"
 #include "fatfs.h"
 #include "i2c.h"
-#include "i2s.h"
 #include "rtc.h"
 #include "sdio.h"
 #include "spi.h"
@@ -32,11 +31,9 @@
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
-// #include "test.h"
-// // #include "lvgl.h"
-// #include "BH1750.h"
-// #include "MAX30102.h"
-// #include "DHT11.h"
+#include "log.h"
+#include "ILI9341.h"
+#include "timer.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -69,6 +66,8 @@ void MX_FREERTOS_Init(void);
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
+RTC_TimeTypeDef currentTime;
+RTC_DateTypeDef currentDate;
 
 /* USER CODE END 0 */
 
@@ -106,23 +105,27 @@ int main(void)
   MX_SDIO_SD_Init();
   MX_FATFS_Init();
   MX_RTC_Init();
-  MX_I2S2_Init();
   MX_SPI1_Init();
   MX_USART1_UART_Init();
   MX_I2C1_Init();
   /* USER CODE BEGIN 2 */
-  //FLASH_Test();
-  //MAX30102_Test();
-  //BH1750_Test();
-  // DHT11_Test();
+
+  ILI9341_Init();
+  log_Init();
+  if(Timer_Init() != STATUS_OK)
+  {
+      log_Error("Failed to initialize timer.");
+      Error_Handler();
+  }
+
   /* USER CODE END 2 */
 
   /* Init scheduler */
-  osKernelInitialize();  /* Call init function for freertos objects (in cmsis_os2.c) */
-  MX_FREERTOS_Init();
+  // osKernelInitialize();  /* Call init function for freertos objects (in cmsis_os2.c) */
+  // MX_FREERTOS_Init();
 
   /* Start scheduler */
-  osKernelStart();
+  // osKernelStart();
 
   /* We should never get here as control is now taken by the scheduler */
 
@@ -130,6 +133,10 @@ int main(void)
   /* USER CODE BEGIN WHILE */
   while (1)
   {
+    Timer_GetCurrentTime(&currentTime, &currentDate);
+    ILI9341_Printf(10,10,Font16x24,"[%02d:%02d:%02d]", currentTime.Hours, currentTime.Minutes, currentTime.Seconds);
+    log_Info("[%02d:%02d:%02d]:", currentTime.Hours, currentTime.Minutes, currentTime.Seconds);
+    HAL_Delay(1000);
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
@@ -176,9 +183,8 @@ void SystemClock_Config(void)
   {
     Error_Handler();
   }
-  PeriphClkInit.PeriphClockSelection = RCC_PERIPHCLK_RTC|RCC_PERIPHCLK_I2S2;
+  PeriphClkInit.PeriphClockSelection = RCC_PERIPHCLK_RTC;
   PeriphClkInit.RTCClockSelection = RCC_RTCCLKSOURCE_LSE;
-  PeriphClkInit.I2s2ClockSelection = RCC_I2S2CLKSOURCE_SYSCLK;
   if (HAL_RCCEx_PeriphCLKConfig(&PeriphClkInit) != HAL_OK)
   {
     Error_Handler();

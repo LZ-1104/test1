@@ -11,7 +11,7 @@
  *********************/
 #include "lv_port_disp.h"
 #include <stdbool.h>
-// #include "ILI9341.h"
+#include "ILI9341.h"
 /*********************
  *      DEFINES
  *********************/
