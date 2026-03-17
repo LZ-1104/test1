@@ -8,7 +8,7 @@
 #include "lv_port_disp.h"
 #include "lvgl.h"
 
-
+#include "log.h"
 
 void FLASH_Test(void)
 {
@@ -140,13 +140,16 @@ static void touch_btn_event_cb(lv_event_t *e)
     if(code == LV_EVENT_PRESSED) {
         lv_obj_set_style_bg_color(btn, lv_color_hex(0x44AA44), 0);
         if(g_touch_status) lv_label_set_text(g_touch_status, "Status: PRESSED");
+        log_Info("Touch button pressed");
     }
     else if(code == LV_EVENT_RELEASED) {
         lv_obj_set_style_bg_color(btn, lv_color_hex(0x2E6BD1), 0);
         if(g_touch_status) lv_label_set_text(g_touch_status, "Status: RELEASED");
+        log_Info("Touch button released");
     }
     else if(code == LV_EVENT_CLICKED) {
         if(g_touch_status) lv_label_set_text(g_touch_status, "Status: CLICKED");
+        log_Info("Touch button clicked");
     }
 }
 
@@ -190,11 +193,11 @@ void lv_test(void)
     lv_obj_align(g_touch_status, LV_ALIGN_BOTTOM_MID, 0, -10);
 
 
-    while (1)
-    {
-        lv_timer_handler(); // 处理LVGL任务
-        HAL_Delay(5); // 延时，避免占用过多CPU资源
-    }
+    // while (1)
+    // {
+    //     lv_timer_handler(); // 处理LVGL任务
+    //     HAL_Delay(5); // 延时，避免占用过多CPU资源
+    // }
 }
 
 void PCM_Test(void)

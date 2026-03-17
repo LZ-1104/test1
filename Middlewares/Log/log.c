@@ -15,7 +15,7 @@ void log_Init(void)
 {
     // 初始化串口或其他日志输出设备
     DEBUG_USART_Config();
-    log_Info("Log system initialized successfully\r\n");
+    log_Info("Log system initialized successfully.");
 }
 
 //日志输出函数

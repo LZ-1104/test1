@@ -66,6 +66,7 @@ target_sources(${CMAKE_PROJECT_NAME} PRIVATE
     ${CMAKE_SOURCE_DIR}/bsp/DHT11.c
     ${CMAKE_SOURCE_DIR}/Middlewares/Log/log.c
     ${CMAKE_SOURCE_DIR}/Application/timer.c
+    ${CMAKE_SOURCE_DIR}/Application/maze.c
 )
 
 # Add include paths

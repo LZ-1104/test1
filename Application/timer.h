@@ -12,9 +12,4 @@ void Timer_GetCurrentTime(RTC_TimeTypeDef* time, RTC_DateTypeDef* date);
 
 
 
-
-
-
-
-
 #endif /* __TIMER_H */

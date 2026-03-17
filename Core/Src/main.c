@@ -32,9 +32,8 @@
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 #include "log.h"
-#include "ILI9341.h"
-#include "timer.h"
-#include "test.h"
+#include "lvgl.h"
+#include "maze.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -113,12 +112,16 @@ int main(void)
 
 
   log_Init();
-  if(Timer_Init() != STATUS_OK)
-  {
-      log_Error("Failed to initialize timer.");
-      Error_Handler();
-  }
-  lv_test();
+  // if(Timer_Init() != STATUS_OK)
+  // {
+  //     log_Error("Failed to initialize timer.");
+  //     Error_Handler();
+  // }
+  // lv_test();
+  // log_Debug("LVGL test completed.");
+  Maze_Init();
+  Maze_Test();
+  log_Debug("Maze test completed.");
   /* USER CODE END 2 */
 
   /* Init scheduler */
@@ -134,10 +137,8 @@ int main(void)
   /* USER CODE BEGIN WHILE */
   while (1)
   {
-    Timer_GetCurrentTime(&currentTime, &currentDate);
-    ILI9341_Printf(10,10,Font16x24,"[%02d:%02d:%02d]", currentTime.Hours, currentTime.Minutes, currentTime.Seconds);
-    log_Info("[%02d:%02d:%02d]:", currentTime.Hours, currentTime.Minutes, currentTime.Seconds);
-    HAL_Delay(1000);
+    lv_timer_handler(); // 处理LVGL任务
+    HAL_Delay(1); // 延时，避免占用过多CPU资源
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
