@@ -25,6 +25,8 @@
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 #include "lvgl.h"
+#include "lv_port_disp.h"
+
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -58,7 +60,9 @@
 /* USER CODE END 0 */
 
 /* External variables --------------------------------------------------------*/
+extern DMA_HandleTypeDef hdma_memtomem_dma1_channel6;
 extern RTC_HandleTypeDef hrtc;
+extern lv_display_t * current_disp;
 /* USER CODE BEGIN EV */
 
 /* USER CODE END EV */
@@ -198,6 +202,24 @@ void RTC_IRQHandler(void)
   /* USER CODE BEGIN RTC_IRQn 1 */
 
   /* USER CODE END RTC_IRQn 1 */
+}
+
+/**
+  * @brief This function handles DMA1 channel6 global interrupt.
+  */
+void DMA1_Channel6_IRQHandler(void)
+{
+  /* USER CODE BEGIN DMA1_Channel6_IRQn 0 */
+  int tc_flag = __HAL_DMA_GET_FLAG(&hdma_memtomem_dma1_channel6, DMA_FLAG_TC6);
+  /* USER CODE END DMA1_Channel6_IRQn 0 */
+  HAL_DMA_IRQHandler(&hdma_memtomem_dma1_channel6);
+  /* USER CODE BEGIN DMA1_Channel6_IRQn 1 */
+  if (tc_flag) {
+      if (current_disp) {
+          lv_display_flush_ready(current_disp);
+      }
+  }
+  /* USER CODE END DMA1_Channel6_IRQn 1 */
 }
 
 /* USER CODE BEGIN 1 */

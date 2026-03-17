@@ -133,7 +133,7 @@ static void ILI9341_FSMC_Config(void)
     /* SRAM device configuration */
     Timing.AddressSetupTime = 0x00; /// 地址建立时间
     Timing.AddressHoldTime = 0x00;
-    Timing.DataSetupTime = 0x18;
+    Timing.DataSetupTime = 0x04;    // 提高FSMC读写速度
     Timing.BusTurnAroundDuration = 0x00;
     Timing.CLKDivision = 0x00;
     Timing.DataLatency = 0x00;
@@ -328,7 +328,8 @@ void ILI9341_Init(void)
 {
     ILI9341_GPIO_Config();
     ILI9341_FSMC_Config();
-
+    ILI9341_DMA_Config();
+    
     ILI9341_BackLed_Control(ENABLE); // 点亮LCD背光灯
     ILI9341_Rst();
     ILI9341_REG_Config();
@@ -730,17 +731,19 @@ void ILI9341_DMA_WritePixels(uint16_t x, uint16_t y, uint16_t w, uint16_t h,
     if (w == 0 || h == 0)
         return;
     uint32_t need = (uint32_t)w * (uint32_t)h;
-    if (data == NULL)
-        data = &GRAM_Buffer[0][0]; // 允许传 NULL 时用内部缓冲
-    if (length < need)
-        need = length; // 如果传入长度小于窗口像素数, 只传 length 个
+    // if (data == NULL)
+    //     data = &GRAM_Buffer[0][0]; // 允许传 NULL 时用内部缓冲
+    // if (length < need)
+    //     need = length; // 如果传入长度小于窗口像素数, 只传 length 个
 
     ILI9341_OpenWindow(x, y, w, h);
     ILI9341_Write_Cmd(CMD_SetPixel);
 
     // 启动DMA: 源 data, 目的 LCD 数据寄存器 (FSMC映射地址)
-    HAL_DMA_Start(&hdma_memtomem_dma1_channel6, (uint32_t)data, (uint32_t)FSMC_Addr_ILI9341_DATA, need);
-    HAL_DMA_PollForTransfer(&hdma_memtomem_dma1_channel6, HAL_DMA_FULL_TRANSFER, HAL_MAX_DELAY);
+    HAL_DMA_Start_IT(&hdma_memtomem_dma1_channel6, (uint32_t)data, (uint32_t)FSMC_Addr_ILI9341_DATA, need);
+    //采用中断时，注释掉下面的轮询函数，否则会阻塞在这里，无法响应DMA中断，导致DMA传输无法完成，完成检测在DMA中断回调函数中实现
+    //如果不使用中断，可以使用下面的轮询函数等待DMA传输完成，但会阻塞CPU，无法执行其他任务
+    //HAL_DMA_PollForTransfer(&hdma_memtomem_dma1_channel6, HAL_DMA_FULL_TRANSFER, HAL_MAX_DELAY);
 }
 
 /*工具函数仅供内部部分函数使用*/

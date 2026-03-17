@@ -15,8 +15,8 @@
 /*********************
  *      DEFINES
  *********************/
-#define MY_DISP_HOR_RES    320
-#define MY_DISP_VER_RES    240
+#define MY_DISP_HOR_RES    200      //当前实际为320
+#define MY_DISP_VER_RES    200      //当前实际为240
 #ifndef MY_DISP_HOR_RES
     #warning Please define or replace the macro MY_DISP_HOR_RES with the actual screen width, default value 320 is used for now.
     #define MY_DISP_HOR_RES    320
@@ -39,12 +39,12 @@
 static void disp_init(void);
 
 static void disp_flush(lv_display_t * disp, const lv_area_t * area, uint8_t * px_map);
-
 /**********************
  *  STATIC VARIABLES
  **********************/
+lv_display_t * current_disp = NULL;
 
-/**********************
+ /**********************
  *      MACROS
  **********************/
 
@@ -64,22 +64,23 @@ void lv_port_disp_init(void)
      * -----------------------------------*/
     lv_display_t * disp = lv_display_create(MY_DISP_HOR_RES, MY_DISP_VER_RES);
     lv_display_set_flush_cb(disp, disp_flush);
+    current_disp = disp;
 
     /* Example 1
      * One buffer for partial rendering*/
-    LV_ATTRIBUTE_MEM_ALIGN
-    static uint8_t buf_1_1[MY_DISP_HOR_RES * 10 * BYTE_PER_PIXEL];            /*A buffer for 10 rows*/
-    lv_display_set_buffers(disp, buf_1_1, NULL, sizeof(buf_1_1), LV_DISPLAY_RENDER_MODE_PARTIAL);
+    // LV_ATTRIBUTE_MEM_ALIGN
+    // static uint8_t buf_1_1[MY_DISP_HOR_RES * 10 * BYTE_PER_PIXEL];            /*A buffer for 10 rows*/
+    // lv_display_set_buffers(disp, buf_1_1, NULL, sizeof(buf_1_1), LV_DISPLAY_RENDER_MODE_PARTIAL);
 
     /* Example 2
      * Two buffers for partial rendering
      * In flush_cb DMA or similar hardware should be used to update the display in the background.*/
-    // LV_ATTRIBUTE_MEM_ALIGN
-    // static uint8_t buf_2_1[MY_DISP_HOR_RES * 10 * BYTE_PER_PIXEL];
+    LV_ATTRIBUTE_MEM_ALIGN
+    static uint8_t buf_2_1[MY_DISP_HOR_RES * 10 * BYTE_PER_PIXEL];
 
-    // LV_ATTRIBUTE_MEM_ALIGN
-    // static uint8_t buf_2_2[MY_DISP_HOR_RES * 10 * BYTE_PER_PIXEL];
-    // lv_display_set_buffers(disp, buf_2_1, buf_2_2, sizeof(buf_2_1), LV_DISPLAY_RENDER_MODE_PARTIAL);
+    LV_ATTRIBUTE_MEM_ALIGN
+    static uint8_t buf_2_2[MY_DISP_HOR_RES * 10 * BYTE_PER_PIXEL];
+    lv_display_set_buffers(disp, buf_2_1, buf_2_2, sizeof(buf_2_1), LV_DISPLAY_RENDER_MODE_PARTIAL);
 
     /* Example 3
      * Two buffers screen sized buffer for double buffering.
@@ -131,8 +132,8 @@ static void disp_flush(lv_display_t * disp_drv, const lv_area_t * area, uint8_t 
         int32_t h = area->y2 - area->y1 + 1;
         const uint16_t *p = (const uint16_t *)px_map;
 
-        ILI9341_BlitAreaFast((uint16_t)area->x1, (uint16_t)area->y1,(uint16_t)w, (uint16_t)h, p);
-
+        //ILI9341_BlitAreaFast((uint16_t)area->x1, (uint16_t)area->y1,(uint16_t)w, (uint16_t)h, p);
+        ILI9341_DMA_WritePixels((uint16_t)area->x1, (uint16_t)area->y1,(uint16_t)w, (uint16_t)h, p, (uint32_t)(w * h));
         // /* Row-by-row flush: set window per row and stream RGB565 pixels */
         // int32_t w = area->x2 - area->x1 + 1;
         // int32_t h = area->y2 - area->y1 + 1;
@@ -153,11 +154,12 @@ static void disp_flush(lv_display_t * disp_drv, const lv_area_t * area, uint8_t 
         //     /* Stream pixels of this row */
         //     ILI9341_WritePixels(p, (uint32_t)w);
         // }
+    } 
+    else {
+        /*IMPORTANT!!!
+         *Inform the graphics library that you are ready with the flushing*/
+        lv_display_flush_ready(disp_drv);
     }
-
-    /*IMPORTANT!!!
-     *Inform the graphics library that you are ready with the flushing*/
-    lv_display_flush_ready(disp_drv);
 }
 
 #else /*Enable this file at the top*/
