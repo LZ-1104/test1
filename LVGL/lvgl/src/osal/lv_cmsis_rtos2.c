@@ -85,8 +85,8 @@ lv_result_t lv_thread_delete(lv_thread_t * thread)
 lv_result_t lv_mutex_init(lv_mutex_t * mutex)
 {
     const osMutexAttr_t Thread_Mutex_attr = {
-        "LVGLMutex",
-        osMutexRecursive | osMutexPrioInherit | osMutexRobust,
+        .name = "LVGLMutex",
+        .attr_bits = osMutexRecursive | osMutexPrioInherit | osMutexRobust,
     };
 
     *mutex = osMutexNew(&Thread_Mutex_attr);

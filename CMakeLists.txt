@@ -42,6 +42,11 @@ target_link_options(test1 PRIVATE -u _printf_float)
 add_subdirectory(cmake/stm32cubemx)#添加STM32CubeMX生成的代码
 # Add LVGL library
 add_subdirectory(LVGL/lvgl)
+target_include_directories(lvgl SYSTEM PUBLIC
+    ${CMAKE_SOURCE_DIR}/Drivers/CMSIS/RTOS2/Include
+    ${CMAKE_SOURCE_DIR}/Middlewares/Third_Party/FreeRTOS/Source/include
+    ${CMAKE_SOURCE_DIR}/Middlewares/Third_Party/FreeRTOS/Source/CMSIS_RTOS_V2
+)
 # Link directories setup
 target_link_directories(${CMAKE_PROJECT_NAME} PRIVATE
     # Add user defined library search paths
@@ -64,6 +69,7 @@ target_sources(${CMAKE_PROJECT_NAME} PRIVATE
     ${CMAKE_SOURCE_DIR}/bsp/MAX30102.c
     ${CMAKE_SOURCE_DIR}/system/IIC.c
     ${CMAKE_SOURCE_DIR}/bsp/DHT11.c
+    ${CMAKE_SOURCE_DIR}/bsp/ESP8266.c
     ${CMAKE_SOURCE_DIR}/Middlewares/Log/log.c
     ${CMAKE_SOURCE_DIR}/Application/timer.c
     ${CMAKE_SOURCE_DIR}/Application/maze.c

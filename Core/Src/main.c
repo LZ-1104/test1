@@ -31,9 +31,10 @@
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
-#include "log.h"
-#include "lvgl.h"
-#include "maze.h"
+// #include "log.h"
+// #include "lvgl.h"
+// #include "maze.h"
+// #include "ESP8266.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -66,8 +67,6 @@ void MX_FREERTOS_Init(void);
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
-RTC_TimeTypeDef currentTime;
-RTC_DateTypeDef currentDate;
 
 /* USER CODE END 0 */
 
@@ -108,10 +107,11 @@ int main(void)
   MX_SPI1_Init();
   MX_USART1_UART_Init();
   MX_I2C1_Init();
+  MX_USART3_UART_Init();
   /* USER CODE BEGIN 2 */
 
 
-  log_Init();
+  // log_Init();
   // if(Timer_Init() != STATUS_OK)
   // {
   //     log_Error("Failed to initialize timer.");
@@ -119,17 +119,18 @@ int main(void)
   // }
   // lv_test();
   // log_Debug("LVGL test completed.");
-  Maze_Init();
-  Maze_Test();
-  log_Debug("Maze test completed.");
+  // Maze_Init();
+  // Maze_Test();
+  // log_Debug("Maze test completed.");
+  // ESP8266_Test();
   /* USER CODE END 2 */
 
   /* Init scheduler */
-  // osKernelInitialize();  /* Call init function for freertos objects (in cmsis_os2.c) */
-  // MX_FREERTOS_Init();
+  osKernelInitialize();  /* Call init function for freertos objects (in cmsis_os2.c) */
+  MX_FREERTOS_Init();
 
   /* Start scheduler */
-  // osKernelStart();
+  osKernelStart();
 
   /* We should never get here as control is now taken by the scheduler */
 
@@ -137,8 +138,8 @@ int main(void)
   /* USER CODE BEGIN WHILE */
   while (1)
   {
-    lv_timer_handler(); // 处理LVGL任务
-    HAL_Delay(1); // 延时，避免占用过多CPU资源
+    // lv_timer_handler(); // 处理LVGL任务
+    // HAL_Delay(1); // 延时，避免占用过多CPU资源
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
@@ -200,6 +201,28 @@ void SystemClock_Config(void)
 /* USER CODE BEGIN 4 */
 
 /* USER CODE END 4 */
+
+/**
+  * @brief  Period elapsed callback in non blocking mode
+  * @note   This function is called  when TIM1 interrupt took place, inside
+  * HAL_TIM_IRQHandler(). It makes a direct call to HAL_IncTick() to increment
+  * a global variable "uwTick" used as application time base.
+  * @param  htim : TIM handle
+  * @retval None
+  */
+void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
+{
+  /* USER CODE BEGIN Callback 0 */
+
+  /* USER CODE END Callback 0 */
+  if (htim->Instance == TIM1)
+  {
+    HAL_IncTick();
+  }
+  /* USER CODE BEGIN Callback 1 */
+
+  /* USER CODE END Callback 1 */
+}
 
 /**
   * @brief  This function is executed in case of error occurrence.
