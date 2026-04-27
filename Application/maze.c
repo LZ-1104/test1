@@ -32,8 +32,15 @@
 #define MAZE_HISTORY_PERIOD_MS  40
 #define MAZE_WALL_WIDTH         1
 #define MAZE_POINT_SIZE         3
+#define MAZE_MAX_EXPLORE_STEPS  2500 // 改大容量，物理层面确保包容所有极限步数
 
-// 墙壁位操作紧凑压缩宏
+// 记录每个方向位移的常量，用于重建历史路径
+static const int8_t DIR_OFFSET[4][2] = {
+    {-1, 0}, // UP
+    {0, 1},  // RIGHT
+    {1, 0},  // DOWN
+    {0, -1}  // LEFT
+};
 #define W_COLS_BYTES   ((MAZE_MAX_COLS + 7) / 8)
 #define W_COLS1_BYTES  ((MAZE_MAX_COLS + 1 + 7) / 8)
 #define BIT_SET(arr, r, c)   ( (arr)[r][(c)>>3] |=  (1 << ((c)&7)) )
@@ -68,8 +75,9 @@ typedef struct {
     uint8_t known_wall_h[MAZE_MAX_ROWS + 1][W_COLS_BYTES]; 
     uint8_t known_wall_v[MAZE_MAX_ROWS][W_COLS1_BYTES]; 
     
-    // 第一阶段：建图探索轨迹 (由于不删轨迹，容量直接开到极大)
-    maze_point_t explore_trace[2000];
+    // 第一阶段：建图探索轨迹（采用方向位压缩存储，1字节存4步方向！2500步仅需 625 Bytes）
+    // 告别 maze_point_t 庞大数组（原 5000 Bytes），立省 4.3 KB RAM！
+    uint8_t explore_trace_dirs[(MAZE_MAX_EXPLORE_STEPS + 3) / 4];
     uint16_t explore_trace_len;
 
     maze_point_t start;     
@@ -125,8 +133,7 @@ typedef union {
         uint8_t parent_dir[MAZE_MAX_ROWS][MAZE_MAX_COLS];
         uint16_t g_score[MAZE_MAX_ROWS][MAZE_MAX_COLS];
         uint16_t f_score[MAZE_MAX_ROWS][MAZE_MAX_COLS];
-        uint8_t in_open[MAZE_MAX_ROWS][MAZE_MAX_COLS];
-        uint8_t closed[MAZE_MAX_ROWS][MAZE_MAX_COLS];
+        uint8_t state[MAZE_MAX_ROWS][MAZE_MAX_COLS]; // 0:None, 1:Open, 2:Closed (合并标志位再省900 Bytes)
     } astar;
 } maze_work_ram_t;
 
@@ -243,6 +250,19 @@ static bool Core_Is_Open(maze_core_t * mc, maze_point_t cur, maze_dir_t dir)
         case MAZE_DIR_RIGHT: if(cur.col >= mc->cols - 1) return false; return !BIT_CHECK(mc->known_wall_v, cur.row, cur.col + 1);
         default: return false;
     }
+}
+
+// 追加探索轨迹的方向 
+static void Core_Append_Trace_Dir(maze_core_t * mc, maze_dir_t dir) {
+    if (mc->explore_trace_len >= MAZE_MAX_EXPLORE_STEPS) {
+        mc->explore_trace_len = MAZE_MAX_EXPLORE_STEPS - 1; // 防止无限死循环溢出
+    }
+    uint16_t idx = mc->explore_trace_len;
+    uint16_t byte_idx = idx / 4;
+    uint8_t shift = (idx % 4) * 2;
+    mc->explore_trace_dirs[byte_idx] &= ~(0x03 << shift);
+    mc->explore_trace_dirs[byte_idx] |= ((dir & 0x03) << shift);
+    mc->explore_trace_len++;
 }
 
 // 提取当前格子的踩踏次数 (2-bit per cell)
@@ -438,8 +458,7 @@ static void Algo_Calculate_BFS(maze_core_t * mc, bool strict_verify) {
 static void Algo_Calculate_AStar(maze_core_t * mc, bool strict_verify) {
     memset(s_work.astar.g_score, 0xFF, sizeof(s_work.astar.g_score)); 
     memset(s_work.astar.f_score, 0xFF, sizeof(s_work.astar.f_score));
-    memset(s_work.astar.closed, 0, sizeof(s_work.astar.closed));
-    memset(s_work.astar.in_open, 0, sizeof(s_work.astar.in_open));
+    memset(s_work.astar.state, 0, sizeof(s_work.astar.state));
     
     uint16_t open_cnt = 0;
 
@@ -447,7 +466,7 @@ static void Algo_Calculate_AStar(maze_core_t * mc, bool strict_verify) {
     s_work.astar.g_score[mc->ant_pos.row][mc->ant_pos.col] = 0;
     s_work.astar.f_score[mc->ant_pos.row][mc->ant_pos.col] = 
         Core_Abs((int16_t)mc->ant_pos.row - (int16_t)mc->end.row) + Core_Abs((int16_t)mc->ant_pos.col - (int16_t)mc->end.col);
-    s_work.astar.in_open[mc->ant_pos.row][mc->ant_pos.col] = 1;
+    s_work.astar.state[mc->ant_pos.row][mc->ant_pos.col] = 1;
 
     bool found = false;
 
@@ -468,8 +487,7 @@ static void Algo_Calculate_AStar(maze_core_t * mc, bool strict_verify) {
 
         s_work.astar.open_set[best_idx] = s_work.astar.open_set[open_cnt - 1];
         open_cnt--;
-        s_work.astar.in_open[cur.row][cur.col] = 0;
-        s_work.astar.closed[cur.row][cur.col] = 1;
+        s_work.astar.state[cur.row][cur.col] = 2; // 2=closed
 
         for(uint8_t i = 0; i < 4; i++) {
             if(Core_Is_Open(mc, cur, (maze_dir_t)i)) {
@@ -485,7 +503,7 @@ static void Algo_Calculate_AStar(maze_core_t * mc, bool strict_verify) {
                                    (next.row == mc->start.row && next.col == mc->start.col);
                 if (strict_verify && !is_verified) continue;
 
-                if(s_work.astar.closed[next.row][next.col]) continue; 
+                if(s_work.astar.state[next.row][next.col] == 2) continue; 
 
                 uint16_t try_g = s_work.astar.g_score[cur.row][cur.col] + 1; 
                 if(try_g < s_work.astar.g_score[next.row][next.col]) {
@@ -493,9 +511,9 @@ static void Algo_Calculate_AStar(maze_core_t * mc, bool strict_verify) {
                     s_work.astar.g_score[next.row][next.col] = try_g;
                     s_work.astar.f_score[next.row][next.col] = try_g + Core_Abs((int16_t)next.row - (int16_t)mc->end.row) + Core_Abs((int16_t)next.col - (int16_t)mc->end.col);
                     
-                    if(!s_work.astar.in_open[next.row][next.col]) {
+                    if(s_work.astar.state[next.row][next.col] != 1) {
                         s_work.astar.open_set[open_cnt++] = next;
-                        s_work.astar.in_open[next.row][next.col] = 1;
+                        s_work.astar.state[next.row][next.col] = 1;
                     }
                 }
             }
@@ -635,9 +653,9 @@ static bool Core_Ant_Step(maze_core_t * mc)
         mc->ant_pos = next_pos;
         mc->ant_dir = next_dir;
 
-        if(mc->explore_trace_len < 2000) {
-            mc->explore_trace[mc->explore_trace_len++] = next_pos;
-        } 
+        // 保存行走方向以极低内存还原轨迹
+        Core_Append_Trace_Dir(mc, next_dir);
+
         mc->ant_steps++;
         return true;
     }
@@ -673,7 +691,7 @@ static void Core_Reset(maze_core_t * mc)
     memset(mc->known_wall_h, 0, sizeof(mc->known_wall_h));
     memset(mc->known_wall_v, 0, sizeof(mc->known_wall_v));
     memset(mc->visit_count, 0, sizeof(mc->visit_count));
-    memset(mc->explore_trace, 0, sizeof(mc->explore_trace));
+    memset(mc->explore_trace_dirs, 0, sizeof(mc->explore_trace_dirs));
     mc->explore_trace_len = 0;
     mc->ant_pos = mc->start;
     mc->ant_dir = MAZE_DIR_RIGHT; 
@@ -682,7 +700,6 @@ static void Core_Reset(maze_core_t * mc)
     mc->is_reached = false;
     mc->is_end_known = false;
     mc->is_speed_run = false;
-    mc->explore_trace[mc->explore_trace_len++] = mc->start;
     mc->need_recalc = true; 
 }
 
@@ -780,20 +797,30 @@ static void View_Draw_Fg_Event(lv_event_t * e)
     maze_core_t * mc = &s_app.core;
 
     // 绘制紫色建图轨迹 (永久保留，表示探索的过程)
-    if(mc->explore_trace_len >= 2) {
+    if(mc->explore_trace_len >= 1) {
         lv_draw_line_dsc_t expl_dsc;
         lv_draw_line_dsc_init(&expl_dsc);
         expl_dsc.color = lv_color_hex(0x8000FF); // 紫色细线
         expl_dsc.width = 1;
-        
-        for(uint16_t i = 1; i < mc->explore_trace_len; ++i) {
-            maze_point_t p0 = mc->explore_trace[i - 1];
-            maze_point_t p1 = mc->explore_trace[i];
-            expl_dsc.p1.x = coords.x1 + (int32_t)p0.col * MAZE_CELL_SIZE + (MAZE_CELL_SIZE / 2);
-            expl_dsc.p1.y = coords.y1 + (int32_t)p0.row * MAZE_CELL_SIZE + (MAZE_CELL_SIZE / 2);
-            expl_dsc.p2.x = coords.x1 + (int32_t)p1.col * MAZE_CELL_SIZE + (MAZE_CELL_SIZE / 2);
-            expl_dsc.p2.y = coords.y1 + (int32_t)p1.row * MAZE_CELL_SIZE + (MAZE_CELL_SIZE / 2);
+
+        maze_point_t curr_pos = mc->start;
+
+        for(uint16_t i = 0; i < mc->explore_trace_len; ++i) {
+            uint16_t byte_idx = i / 4;
+            uint8_t bit_shift = (i % 4) * 2;
+            uint8_t d = (mc->explore_trace_dirs[byte_idx] >> bit_shift) & 0x03;
+
+            maze_point_t next_pos = curr_pos;
+            next_pos.row += DIR_OFFSET[d][0];
+            next_pos.col += DIR_OFFSET[d][1];
+
+            expl_dsc.p1.x = coords.x1 + (int32_t)curr_pos.col * MAZE_CELL_SIZE + (MAZE_CELL_SIZE / 2);
+            expl_dsc.p1.y = coords.y1 + (int32_t)curr_pos.row * MAZE_CELL_SIZE + (MAZE_CELL_SIZE / 2);
+            expl_dsc.p2.x = coords.x1 + (int32_t)next_pos.col * MAZE_CELL_SIZE + (MAZE_CELL_SIZE / 2);
+            expl_dsc.p2.y = coords.y1 + (int32_t)next_pos.row * MAZE_CELL_SIZE + (MAZE_CELL_SIZE / 2);
             lv_draw_line(layer, &expl_dsc);
+
+            curr_pos = next_pos;
         }
     }
 
