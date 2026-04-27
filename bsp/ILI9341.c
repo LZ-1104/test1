@@ -693,7 +693,7 @@ uint16_t GRAM_Buffer[GRAM_HEIGHT][GRAM_WIDTH];
 
 void ILI9341_DMA_Config(void)
 {
-    MX_DMA_Init();
+    /* DMA is initialized once in main (MX_DMA_Init). Avoid re-initializing here. */
 }
 
 void ILI9341_WriteBuffer(uint16_t Color)

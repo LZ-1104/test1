@@ -15,8 +15,8 @@
 /*********************
  *      DEFINES
  *********************/
-#define MY_DISP_HOR_RES    200      //当前实际为320
-#define MY_DISP_VER_RES    200      //当前实际为240
+#define MY_DISP_HOR_RES    160      //当前实际为320
+#define MY_DISP_VER_RES    120      //当前实际为240
 #ifndef MY_DISP_HOR_RES
     #warning Please define or replace the macro MY_DISP_HOR_RES with the actual screen width, default value 320 is used for now.
     #define MY_DISP_HOR_RES    320
@@ -64,6 +64,7 @@ void lv_port_disp_init(void)
      * -----------------------------------*/
     lv_display_t * disp = lv_display_create(MY_DISP_HOR_RES, MY_DISP_VER_RES);
     lv_display_set_flush_cb(disp, disp_flush);
+    lv_display_set_default(disp);
     current_disp = disp;
 
     /* Example 1
