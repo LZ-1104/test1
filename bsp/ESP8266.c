@@ -24,7 +24,8 @@
  * @param  rx_buf_size: 缓冲区最大长度
  * @param  timeout:     字节间最大等待超时（毫秒）
  */
-static void ESP8266_ReadResponse(uint8_t* rx_buf, uint16_t rx_buf_size, uint32_t timeout, const char* ack) {
+static void ESP8266_ReadResponse(uint8_t* rx_buf, uint16_t rx_buf_size, uint32_t timeout, const char* ack)
+{
     uint16_t idx = 0U;
     uint8_t ch = 0U;
     uint32_t start_tick = HAL_GetTick( );
@@ -56,21 +57,24 @@ static void ESP8266_ReadResponse(uint8_t* rx_buf, uint16_t rx_buf_size, uint32_t
 /**
  * @brief  拉高EN(使能)引脚，开启模块电源。
  */
-void ESP8266_PowerOn(void) {
+void ESP8266_PowerOn(void)
+{
     HAL_GPIO_WritePin(ESP8266_EN_GPIO_PORT, ESP8266_EN_GPIO_PIN, GPIO_PIN_SET);
 }
 
 /**
  * @brief  拉低EN(使能)引脚，断开模块电源。
  */
-void ESP8266_PowerOff(void) {
+void ESP8266_PowerOff(void)
+{
     HAL_GPIO_WritePin(ESP8266_EN_GPIO_PORT, ESP8266_EN_GPIO_PIN, GPIO_PIN_RESET);
 }
 
 /**
  * @brief  执行硬件复位时序：拉低RST引脚，延时后拉高（低电平复位）。
  */
-void ESP8266_HardReset(void) {
+void ESP8266_HardReset(void)
+{
     HAL_GPIO_WritePin(ESP8266_RST_GPIO_PORT, ESP8266_RST_GPIO_PIN, GPIO_PIN_RESET);
     HAL_Delay(100);
     HAL_GPIO_WritePin(ESP8266_RST_GPIO_PORT, ESP8266_RST_GPIO_PIN, GPIO_PIN_SET);
@@ -80,10 +84,13 @@ void ESP8266_HardReset(void) {
 /**
  * @brief  初始化模块：执行上电并做一次完整的硬件复位。
  */
-void ESP8266_Init(void) {
+void ESP8266_Init(void)
+{
     ESP8266_PowerOn( );
     HAL_Delay(50);
     ESP8266_HardReset( );
+    HAL_Delay(50);
+
 }
 
 /* ==================================================================== */
@@ -95,7 +102,8 @@ void ESP8266_Init(void) {
 /// @param ack 期望在回复中出现的字符串，收到它就提前跳出等待；如果为NULL，则不关心回复内容，只要有回复就继续等待直到超时
 /// @param timeout 每次等待接收新字节的超时时间，单位毫秒。注意：每收到一个新字节都会重置这个超时计时器，因此它是字节间的最大允许间隔，而不是总的等待时间上限
 /// @return
-bool ESP8266_SendCmd(const char* cmd, const char* ack, uint32_t timeout) {
+bool ESP8266_SendCmd(const char* cmd, const char* ack, uint32_t timeout)
+{
     uint8_t rx_buf[ESP8266_RX_BUFFER_SIZE];
 
     if (cmd != NULL) {
@@ -129,7 +137,8 @@ bool ESP8266_SendCmd(const char* cmd, const char* ack, uint32_t timeout) {
 /// @brief  检查ESP8266模块是否响应正常
 /// @param  无
 /// @return true: 模块有响应且回复正常 / false: 模块无响应或回复异常
-bool ESP8266_CheckAlive(void) {
+bool ESP8266_CheckAlive(void)
+{
     /* 测试基础命令AT，预期返回OK即可 */
     return ESP8266_SendCmd("AT\r\n", "OK", 500U);
 }
@@ -137,7 +146,8 @@ bool ESP8266_CheckAlive(void) {
 /// @brief  设置WiFi工作模式
 /// @param  mode: WiFi工作模式，0-AP模式，1-STA模式，2-混合模式
 /// @return true: 设置成功 / false: 设置失败
-bool ESP8266_SetWifiMode(uint8_t mode) {
+bool ESP8266_SetWifiMode(uint8_t mode)
+{
     char cmd[32];
     snprintf(cmd, sizeof(cmd), "AT+CWMODE=%u\r\n", mode);
     return ESP8266_SendCmd(cmd, "OK", 500U);
@@ -147,7 +157,8 @@ bool ESP8266_SetWifiMode(uint8_t mode) {
 /// @param  ssid: WiFi网络名称
 /// @param  pwd:  WiFi密码
 /// @return true: 连接成功 / false: 连接失败
-bool ESP8266_ConnectAP(const char* ssid, const char* pwd) {
+bool ESP8266_ConnectAP(const char* ssid, const char* pwd)
+{
     char cmd[128];
 
     if (ssid == NULL || pwd == NULL) {
@@ -164,7 +175,8 @@ bool ESP8266_ConnectAP(const char* ssid, const char* pwd) {
 /// @param ip       服务器IP地址字符串
 /// @param port     服务器端口号
 /// @return         true: 成功建立连接 / false: 连接失败
-bool ESP8266_ConnectTcpServer(const char* ip, uint16_t port) {
+bool ESP8266_ConnectTcpServer(const char* ip, uint16_t port)
+{
     char cmd[128];
 
     if (ip == NULL) {
@@ -183,7 +195,8 @@ bool ESP8266_ConnectTcpServer(const char* ip, uint16_t port) {
  * @return  true: 数据成功发送 / false: 发送失败
  * @note    发送流程分为三步：1. 先发AT+CIPSEND=数据长度，等待模块回复 '>' 提示符；2. 收到提示符后立即发送原始数据；3. 等待模块回复 "SEND OK" 确认数据已发出
  */
-bool ESP8266_SendTcpData(const uint8_t* data, uint16_t len) {
+bool ESP8266_SendTcpData(const uint8_t* data, uint16_t len)
+{
     char cmd[32];
 
     if (data == NULL || len == 0U) {
@@ -208,7 +221,8 @@ bool ESP8266_SendTcpData(const uint8_t* data, uint16_t len) {
 /// @brief          关闭TCP连接
 /// @param  无
 /// @return         true: 关闭成功 / false: 关闭失败
-bool ESP8266_CloseTcpConnection(void) {
+bool ESP8266_CloseTcpConnection(void)
+{
     /* 尝试发送关闭连接命令 */
     return ESP8266_SendCmd("AT+CIPCLOSE\r\n", "CLOSED", 2000U) || ESP8266_SendCmd(NULL, "OK", 1000U);
 }
@@ -224,7 +238,8 @@ bool ESP8266_CloseTcpConnection(void) {
  * @return 读到的数据长度。0 表示没收到数据
  * @note   当 ESP8266 收到电脑 TCP 发来的数据时，默认格式为：+IPD,<len>:<data>
  */
-uint16_t ESP8266_ReceiveTcpData(char* rx_buf, uint16_t max_len) {
+uint16_t ESP8266_ReceiveTcpData(char* rx_buf, uint16_t max_len)
+{
     uint8_t ch;
     uint32_t start_tick;
     char* data_ptr;
@@ -377,10 +392,45 @@ uint16_t ESP8266_ReceiveTcpData(char* rx_buf, uint16_t max_len) {
     return 0;
 }
 
+// void ESPTCP_Printf(const char* format, ...)
+// {
+//     char buffer[256];
+//     va_list args;
+//     va_start(args, format);
+//     vsnprintf(buffer, sizeof(buffer), format, args);
+//     va_end(args);
+//     ESP8266_SendTcpData((uint8_t*)buffer, (uint16_t)strlen(buffer));
+// }
+
+
+
+
+
 /*
 功能测试函数
 连接wifi，连接服务器，发送数据，接收数据
 */
 
-void ESP8266_Test(void) {
+void ESP8266_Test(void)
+{
+}
+
+
+/// @brief  检查并恢复ESP8266模块状态
+/// @note   如果模块无响应，将执行硬件复位并重新初始化
+/// @return true: 模块恢复正常 / false: 模块仍然异常
+bool ESP8266_Recover(void)
+{
+    if (!ESP8266_CheckAlive()) {
+        log_Error("ESP8266 无响应，尝试复位...");
+        ESP8266_HardReset();
+        HAL_Delay(1000); // 等待模块重启完成
+
+        if (!ESP8266_CheckAlive()) {
+            log_Error("ESP8266 复位后仍无响应");
+            return false;
+        }
+        log_Debug("ESP8266 复位成功");
+    }
+    return true;
 }

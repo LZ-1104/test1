@@ -42,4 +42,8 @@ bool ESP8266_CloseTcpConnection(void);
 
 uint16_t ESP8266_ReceiveTcpData(char *rx_buf, uint16_t max_len);
 
+bool ESP8266_Recover(void);
+
+// void ESPTCP_Printf(const char* format, ...);
+
 #endif /* __ESP8266_H */
