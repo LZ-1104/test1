@@ -11,6 +11,15 @@
 //日志级别设置
 #define LOG_LEVEL LOG_LEVEL_DEBUG // 默认日志级别为信息
 
+//定义日志输出硬件
+#define LOG_HARDWARE_UART 0
+#define LOG_HARDWARE_LCD 1
+#define LOG_HARDWARE_WIFI 2
+
+#define LOG_HARDWARE LOG_HARDWARE_UART // 默认日志输出到串口
+
+#define LOG_BUFFER_SIZE 256
+
 
 void log_Init(void);
 void log_Info(const char* format, ...);
