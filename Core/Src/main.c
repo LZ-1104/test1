@@ -18,7 +18,6 @@
 /* USER CODE END Header */
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
-#include "cmsis_os.h"
 #include "dma.h"
 #include "fatfs.h"
 #include "i2c.h"
@@ -31,7 +30,8 @@
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
-// #include "log.h"
+#include "log.h"
+#include "string.h"
 // #include "lvgl.h"
 // #include "maze.h"
 // #include "ESP8266.h"
@@ -60,7 +60,6 @@
 
 /* Private function prototypes -----------------------------------------------*/
 void SystemClock_Config(void);
-void MX_FREERTOS_Init(void);
 /* USER CODE BEGIN PFP */
 
 /* USER CODE END PFP */
@@ -111,7 +110,36 @@ int main(void)
   /* USER CODE BEGIN 2 */
 
 
-  // log_Init();
+  log_Init();
+    // FATFS fs;
+    // FIL file;
+    // FRESULT res;
+
+    // // 挂载文件系统
+    // res = f_mount(&fs, "", 1);
+    // if (res != FR_OK) {
+    //     log_Error("FATFS 挂载失败: %d", res);
+    // }
+    // HAL_Delay(100); // 确保SD卡初始化完成
+    // // 创建并写入文件
+    // res = f_open(&file, "test.txt", FA_CREATE_ALWAYS | FA_WRITE);
+    // if (res != FR_OK) {
+    //     log_Error("FATFS 打开文件失败: %d", res);
+    // }
+    // HAL_Delay(100); // 确保文件系统初始化完成
+    // const char* text = "Hello, FATFS!";
+    // UINT bytesWritten;
+    // res = f_write(&file, text, strlen(text), &bytesWritten);
+    // if (res != FR_OK || bytesWritten != strlen(text)) {
+    //     log_Error("FATFS 写入文件失败: %d", res);
+    //     f_close(&file);
+    // }
+    // else
+    // {
+    //     log_Debug("FATFS 文件写入成功");
+    // }
+    // f_close(&file);
+
   // if(Timer_Init() != STATUS_OK)
   // {
   //     log_Error("Failed to initialize timer.");
@@ -124,15 +152,6 @@ int main(void)
   // log_Debug("Maze test completed.");
   // ESP8266_Test();
   /* USER CODE END 2 */
-
-  /* Init scheduler */
-  osKernelInitialize();  /* Call init function for freertos objects (in cmsis_os2.c) */
-  MX_FREERTOS_Init();
-
-  /* Start scheduler */
-  osKernelStart();
-
-  /* We should never get here as control is now taken by the scheduler */
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
@@ -245,7 +264,8 @@ void Error_Handler(void)
     GPIO_Initure.Speed = GPIO_SPEED_FREQ_HIGH;    //高速
     HAL_GPIO_Init(GPIOB, &GPIO_Initure);         //初始化PB1
     
-    HAL_GPIO_WritePin(GPIOB, GPIO_PIN_1, GPIO_PIN_RESET);
+    HAL_GPIO_TogglePin(GPIOB, GPIO_PIN_1); // 切换 LED 状态
+    HAL_Delay(500); // 延时 500ms
   }
   /* USER CODE END Error_Handler_Debug */
 }

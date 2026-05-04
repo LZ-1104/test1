@@ -15,6 +15,9 @@ set(CMAKE_C_EXTENSIONS ON)
 add_compile_options(-Wno-unused-variable)
 add_compile_options(-Wno-unused-parameter)
 add_compile_options(-Wno-unused-function)
+# add_compile_options(-specs=nosys.specs)
+
+
 # Define the build type
 if(NOT CMAKE_BUILD_TYPE)
     set(CMAKE_BUILD_TYPE "Debug")
@@ -36,17 +39,35 @@ enable_language(C ASM)
 
 # Create an executable object type
 add_executable(${CMAKE_PROJECT_NAME})
-target_link_options(test1 PRIVATE -u _printf_float)
+target_link_options(test1 PRIVATE
+    #  -specs=nosys.specs
+    -u _printf_float
+)
 
 # Add STM32CubeMX generated sources
 add_subdirectory(cmake/stm32cubemx)#添加STM32CubeMX生成的代码
+
+# FreeRTOS config
+set(FREERTOS_PORT GCC_ARM_CM3 CACHE STRING "FreeRTOS port for ARM Cortex-M3")
+set(FREERTOS_HEAP 4 CACHE STRING "FreeRTOS heap implementation")
+
+add_library(freertos_config INTERFACE)
+target_include_directories(freertos_config SYSTEM
+    INTERFACE
+        Core/Inc) # Directory containing FreeRTOSConfig.h
+
+target_compile_definitions(freertos_config
+    INTERFACE
+        projCOVERAGE_TEST=0)
+
+add_subdirectory(Middlewares/Third_Party/FreeRTOS-Kernel)
+
 # Add LVGL library
 add_subdirectory(LVGL/lvgl)
-target_include_directories(lvgl SYSTEM PUBLIC
-    ${CMAKE_SOURCE_DIR}/Drivers/CMSIS/RTOS2/Include
-    ${CMAKE_SOURCE_DIR}/Middlewares/Third_Party/FreeRTOS/Source/include
-    ${CMAKE_SOURCE_DIR}/Middlewares/Third_Party/FreeRTOS/Source/CMSIS_RTOS_V2
-)
+target_link_libraries(lvgl PRIVATE freertos_kernel freertos_config)
+
+
+
 # Link directories setup
 target_link_directories(${CMAKE_PROJECT_NAME} PRIVATE
     # Add user defined library search paths
@@ -89,12 +110,16 @@ target_include_directories(${CMAKE_PROJECT_NAME} PRIVATE
 # Add project symbols (macros)
 target_compile_definitions(${CMAKE_PROJECT_NAME} PRIVATE
     # Add user defined symbols
+    # printf重定向和float支持
+    # __NO_SEMIHOSTING 
 )
 
 # Add linked libraries
 target_link_libraries(${CMAKE_PROJECT_NAME}
     stm32cubemx
     lvgl
+    freertos_kernel
+    freertos_config
     # Add user defined libraries
 )
 
@@ -131,5 +156,4 @@ add_custom_target(flash
     WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
     COMMENT "Flashing ${FIRMWARE_ELF} using OpenOCD"
 )
-
 
